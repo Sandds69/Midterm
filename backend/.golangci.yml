@@ -1,0 +1,41 @@
+# golangci-lint v2 configuration
+# Run:  golangci-lint run ./...
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  # standard = errcheck, govet, ineffassign, staticcheck, unused
+  default: standard
+  enable:
+    - gosec        # SAST: hardcoded creds, weak crypto, SQL string concat, missing timeouts...
+    - bodyclose    # unclosed HTTP response bodies (resource leaks)
+    - errorlint    # correct error wrapping/comparison
+    - noctx        # HTTP requests without context
+    - misspell
+    - unconvert
+  settings:
+    gosec:
+      # Report everything, even low-severity / low-confidence findings.
+      severity: low
+      confidence: low
+      config:
+        global:
+          audit: true
+  exclusions:
+    rules:
+      # Test files use fixed, non-secret test vectors.
+      - path: _test\.go
+        linters:
+          - gosec
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
