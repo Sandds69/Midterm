@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -24,8 +25,12 @@ import (
 func main() {
 	// Local development convenience: load .env if present. In Docker/production the
 	// variables are injected by the environment and no .env file exists.
-	_ = godotenv.Load()          // .env in the current directory
-	_ = godotenv.Load("../.env") // .env in the repo root when running from backend/
+	// A missing .env is fine; any other error (bad syntax, permissions) is logged.
+	for _, f := range []string{".env", "../.env"} {
+		if err := godotenv.Load(f); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			log.Printf("warning: could not load %s: %v", f, err)
+		}
+	}
 
 	cfg, err := config.Load()
 	if err != nil {

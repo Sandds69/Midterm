@@ -2,6 +2,7 @@ package crypto
 
 import (
 	"encoding/base64"
+	"errors"
 	"strings"
 	"testing"
 )
@@ -24,7 +25,7 @@ func TestPasswordHashing(t *testing.T) {
 	if CheckPasswordHash("wrong", hash) {
 		t.Fatal("invalid password accepted")
 	}
-	if _, err := HashPassword(strings.Repeat("a", 73)); err != ErrPasswordTooLong {
+	if _, err := HashPassword(strings.Repeat("a", 73)); !errors.Is(err, ErrPasswordTooLong) {
 		t.Fatal("expected ErrPasswordTooLong")
 	}
 }
@@ -54,7 +55,7 @@ func TestAESGCMNonceIsRandom(t *testing.T) {
 
 func TestAESGCMWrongKey(t *testing.T) {
 	ct, _ := EncryptAESGCM("secret", testKey)
-	if _, err := DecryptAESGCM(ct, otherKey); err != ErrDecryptionFailed {
+	if _, err := DecryptAESGCM(ct, otherKey); !errors.Is(err, ErrDecryptionFailed) {
 		t.Fatalf("expected ErrDecryptionFailed, got %v", err)
 	}
 }
@@ -63,14 +64,14 @@ func TestAESGCMTamperDetection(t *testing.T) {
 	ct, _ := EncryptAESGCM("secret", testKey)
 	raw, _ := base64.StdEncoding.DecodeString(ct)
 	raw[len(raw)-1] ^= 0x01 // flip one bit in the tag
-	if _, err := DecryptAESGCM(base64.StdEncoding.EncodeToString(raw), testKey); err != ErrDecryptionFailed {
+	if _, err := DecryptAESGCM(base64.StdEncoding.EncodeToString(raw), testKey); !errors.Is(err, ErrDecryptionFailed) {
 		t.Fatalf("tampering not detected: %v", err)
 	}
 }
 
 func TestInvalidKeys(t *testing.T) {
 	for _, k := range []string{"", "short", "zz" + testKey[2:], testKey[:62]} {
-		if err := ValidateKey(k); err != ErrInvalidKey {
+		if err := ValidateKey(k); !errors.Is(err, ErrInvalidKey) {
 			t.Fatalf("key %q should be invalid", k)
 		}
 	}
